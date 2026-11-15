@@ -10,7 +10,7 @@
     --text: #1A241E; --muted: #5C6B62; --border: #DCE5DF;
     --green: #2E7D32; --yellow: #F59E0B; --red: #C62828;
   }
-  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
   body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 84px; }
   header {
     background: var(--primary); color: var(--white); padding: 14px 16px;
@@ -20,11 +20,11 @@
   header small { display: block; font-size: 11px; opacity: 0.85; }
   .btn {
     background: var(--primary); color: var(--white); border: none; border-radius: 10px;
-    padding: 10px 14px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    padding: 12px 14px; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
   }
   .btn-outline { background: var(--white); color: var(--primary); border: 1.5px solid var(--primary); }
-  .btn-danger { background: var(--red); color: var(--white); }
-  .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+  .btn-danger { background: var(--red); color: var(--white); width: auto; padding: 6px 10px; font-size: 12px; }
+  .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; width: auto; }
   .container { padding: 14px; max-width: 720px; margin: 0 auto; }
   .card { background: var(--white); border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -46,20 +46,24 @@
   }
   nav button.active { color: var(--primary); }
   input, select {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
-    font-size: 14px; margin-top: 4px; margin-bottom: 10px; background: var(--white);
+    width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px;
+    font-size: 15px; margin-top: 4px; margin-bottom: 12px; background: var(--white);
   }
-  label { font-size: 12px; font-weight: 600; color: var(--muted); }
+  label { font-size: 13px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 2px; }
   .row-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .hidden { display: none !important; }
   .alert-box { background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: 12px; border-radius: 12px; margin-bottom: 12px; font-size: 13px; }
   .login-screen { min-height: 100vh; background: var(--primary); display: flex; align-items: center; justify-content: center; padding: 20px; }
-  .login-card { background: var(--white); border-radius: 18px; padding: 24px; width: 100%; max-width: 380px; }
+  .login-card { background: var(--white); border-radius: 18px; padding: 24px; width: 100%; max-width: 380px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
   .pill-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; }
   .pill-tabs button { white-space: nowrap; padding: 7px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--white); font-size: 12px; font-weight: 600; cursor: pointer; }
   .pill-tabs button.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
   .bar-wrap { background: #E5ECE7; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 6px; }
   .bar-fill { background: var(--primary); height: 100%; }
+  .staff-option-card {
+    padding: 12px; border: 1.5px solid var(--border); border-radius: 10px; margin-bottom: 8px; cursor: pointer; background: #FAFCFA; transition: 0.2s;
+  }
+  .staff-option-card.selected { border-color: var(--primary); background: var(--mint); }
 </style>
 </head>
 <body>
@@ -69,14 +73,18 @@
     <div style="text-align:center;margin-bottom:18px;">
       <div style="width:56px;height:56px;border-radius:50%;background:var(--mint);color:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:26px;font-weight:bold;">🐟</div>
       <h2 style="margin:10px 0 4px;color:var(--primary);font-size:20px;">TAMAH GLOBAL</h2>
-      <div style="font-size:11px;color:var(--muted);">SMART AQUACULTURE. BETTER PRODUCTION. HIGHER PROFITABILITY.</div>
+      <div style="font-size:11px;color:var(--muted);">SMART AQUACULTURE MANAGEMENT</div>
     </div>
+    
     <label>Select Staff Account</label>
-    <select id="loginUserSelect"></select>
+    <div id="staffOptionsList" style="margin-bottom:10px;"></div>
+    <input type="hidden" id="selectedUserId" value="u1">
+
     <label>Enter Private Security PIN</label>
     <input type="password" id="loginPinInput" inputmode="numeric" maxlength="6" placeholder="••••">
     <div id="loginError" style="color:var(--red);font-size:12px;margin-bottom:10px;"></div>
-    <button class="btn" style="width:100%;justify-content:center;padding:12px;" onclick="handleLogin()">Sign In to Farm</button>
+    
+    <button class="btn" onclick="handleLogin()">Sign In to Farm</button>
   </div>
 </div>
 
@@ -360,12 +368,25 @@ async function saveState() {
 }
 
 function populateLoginUsers() {
-  const sel = document.getElementById('loginUserSelect');
-  sel.innerHTML = state.users.map(u => `<option value="${u.id}">${u.name} (${u.role.toUpperCase()})</option>`).join('');
+  const container = document.getElementById('staffOptionsList');
+  if (!container) return;
+  container.innerHTML = state.users.map((u, idx) => `
+    <div class="staff-option-card ${idx === 0 ? 'selected' : ''}" onclick="selectStaffLogin('${u.id}', this)">
+      <div style="font-weight:700;font-size:14px;color:var(--primary);">${u.name}</div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;">Role: ${u.role}</div>
+    </div>
+  `).join('');
+  document.getElementById('selectedUserId').value = state.users[0].id;
+}
+
+function selectStaffLogin(uid, el) {
+  document.querySelectorAll('.staff-option-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('selectedUserId').value = uid;
 }
 
 function handleLogin() {
-  const uid = document.getElementById('loginUserSelect').value;
+  const uid = document.getElementById('selectedUserId').value;
   const pin = document.getElementById('loginPinInput').value.trim();
   const user = state.users.find(u => u.id === uid && u.pin === pin);
   if (!user) {
@@ -421,28 +442,4 @@ function isPondUnderWithdrawal(pondId) {
 }
 
 function renderAll() {
-  if (!currentUser) return;
-  renderDashboard();
-  renderPonds();
-  renderFeed();
-  renderSampling();
-  renderMortality();
-  renderWater();
-  renderMeds();
-  renderTransfers();
-  renderSalesAndCost();
-  renderStaff();
-}
-
-function renderDashboard() {
-  const totalPop = state.ponds.reduce((s, p) => s + Number(p.population || 0), 0);
-  const totalBiomassKg = state.ponds.reduce((s, p) => s + ((Number(p.population || 0) * Number(p.avgWeightG || 0)) / 1000), 0);
-  const avgWt = totalPop > 0 ? (totalBiomassKg * 1000) / totalPop : 0;
-  const totalFeedKg = state.feedBatches.reduce((s, b) => s + Number(b.remainingKg || 0), 0);
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const todayFed = state.feedingLogs.filter(f => f.date === todayStr).reduce((s, f) => s + Number(f.qtyKg || 0), 0);
-  const totalSpend = state.expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const totalRev = state.sales.reduce((s, x) => s + Number(x.total || 0), 0);
-  const unpaid = state.sales.reduce((s, x) => s + (Number(x.total || 0) - Number(x.paid || 0)), 0);
-
-  const lockedPonds
+  if (!curr
