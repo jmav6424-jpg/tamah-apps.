@@ -10,7 +10,7 @@
     --text: #1A241E; --muted: #5C6B62; --border: #DCE5DF;
     --green: #2E7D32; --yellow: #F59E0B; --red: #C62828;
   }
-  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
   body { margin: 0; background: var(--bg); color: var(--text); padding-bottom: 84px; }
   header {
     background: var(--primary); color: var(--white); padding: 14px 16px;
@@ -20,11 +20,11 @@
   header small { display: block; font-size: 11px; opacity: 0.85; }
   .btn {
     background: var(--primary); color: var(--white); border: none; border-radius: 10px;
-    padding: 10px 14px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    padding: 12px 14px; font-weight: 600; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
   }
   .btn-outline { background: var(--white); color: var(--primary); border: 1.5px solid var(--primary); }
-  .btn-danger { background: var(--red); color: var(--white); }
-  .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+  .btn-danger { background: var(--red); color: var(--white); width: auto; padding: 6px 10px; font-size: 12px; }
+  .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; width: auto; }
   .container { padding: 14px; max-width: 720px; margin: 0 auto; }
   .card { background: var(--white); border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -46,20 +46,24 @@
   }
   nav button.active { color: var(--primary); }
   input, select {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
-    font-size: 14px; margin-top: 4px; margin-bottom: 10px; background: var(--white);
+    width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px;
+    font-size: 15px; margin-top: 4px; margin-bottom: 12px; background: var(--white);
   }
-  label { font-size: 12px; font-weight: 600; color: var(--muted); }
+  label { font-size: 13px; font-weight: 600; color: var(--muted); display: block; margin-bottom: 2px; }
   .row-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .hidden { display: none !important; }
   .alert-box { background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: 12px; border-radius: 12px; margin-bottom: 12px; font-size: 13px; }
   .login-screen { min-height: 100vh; background: var(--primary); display: flex; align-items: center; justify-content: center; padding: 20px; }
-  .login-card { background: var(--white); border-radius: 18px; padding: 24px; width: 100%; max-width: 380px; }
+  .login-card { background: var(--white); border-radius: 18px; padding: 24px; width: 100%; max-width: 380px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
   .pill-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; }
   .pill-tabs button { white-space: nowrap; padding: 7px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--white); font-size: 12px; font-weight: 600; cursor: pointer; }
   .pill-tabs button.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
   .bar-wrap { background: #E5ECE7; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 6px; }
   .bar-fill { background: var(--primary); height: 100%; }
+  .staff-option-card {
+    padding: 12px; border: 1.5px solid var(--border); border-radius: 10px; margin-bottom: 8px; cursor: pointer; background: #FAFCFA; transition: 0.2s;
+  }
+  .staff-option-card.selected { border-color: var(--primary); background: var(--mint); }
 </style>
 </head>
 <body>
@@ -69,14 +73,18 @@
     <div style="text-align:center;margin-bottom:18px;">
       <div style="width:56px;height:56px;border-radius:50%;background:var(--mint);color:var(--primary);display:inline-flex;align-items:center;justify-content:center;font-size:26px;font-weight:bold;">🐟</div>
       <h2 style="margin:10px 0 4px;color:var(--primary);font-size:20px;">TAMAH GLOBAL</h2>
-      <div style="font-size:11px;color:var(--muted);">SMART AQUACULTURE. BETTER PRODUCTION. HIGHER PROFITABILITY.</div>
+      <div style="font-size:11px;color:var(--muted);">SMART AQUACULTURE MANAGEMENT</div>
     </div>
+    
     <label>Select Staff Account</label>
-    <select id="loginUserSelect"></select>
+    <div id="staffOptionsList" style="margin-bottom:10px;"></div>
+    <input type="hidden" id="selectedUserId" value="u1">
+
     <label>Enter Private Security PIN</label>
     <input type="password" id="loginPinInput" inputmode="numeric" maxlength="6" placeholder="••••">
     <div id="loginError" style="color:var(--red);font-size:12px;margin-bottom:10px;"></div>
-    <button class="btn" style="width:100%;justify-content:center;padding:12px;" onclick="handleLogin()">Sign In to Farm</button>
+    
+    <button class="btn" onclick="handleLogin()">Sign In to Farm</button>
   </div>
 </div>
 
@@ -360,12 +368,25 @@ async function saveState() {
 }
 
 function populateLoginUsers() {
-  const sel = document.getElementById('loginUserSelect');
-  sel.innerHTML = state.users.map(u => `<option value="${u.id}">${u.name} (${u.role.toUpperCase()})</option>`).join('');
+  const container = document.getElementById('staffOptionsList');
+  if (!container) return;
+  container.innerHTML = state.users.map((u, idx) => `
+    <div class="staff-option-card ${idx === 0 ? 'selected' : ''}" onclick="selectStaffLogin('${u.id}', this)">
+      <div style="font-weight:700;font-size:14px;color:var(--primary);">${u.name}</div>
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;">Role: ${u.role}</div>
+    </div>
+  `).join('');
+  document.getElementById('selectedUserId').value = state.users[0].id;
+}
+
+function selectStaffLogin(uid, el) {
+  document.querySelectorAll('.staff-option-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('selectedUserId').value = uid;
 }
 
 function handleLogin() {
-  const uid = document.getElementById('loginUserSelect').value;
+  const uid = document.getElementById('selectedUserId').value;
   const pin = document.getElementById('loginPinInput').value.trim();
   const user = state.users.find(u => u.id === uid && u.pin === pin);
   if (!user) {
@@ -445,4 +466,742 @@ function renderDashboard() {
   const totalRev = state.sales.reduce((s, x) => s + Number(x.total || 0), 0);
   const unpaid = state.sales.reduce((s, x) => s + (Number(x.total || 0) - Number(x.paid || 0)), 0);
 
-  const lockedPonds
+  const lockedPonds = state.ponds.filter(p => isPondUnderWithdrawal(p.id));
+  const abnormalWater = state.waterLogs.filter(w => w.abnormal);
+  let alertsHtml = '';
+  if (lockedPonds.length) {
+    alertsHtml += `<div class="alert-box">⛔ <strong>DO NOT HARVEST:</strong> ${lockedPonds.map(p => p.id).join(', ')} under active medication withdrawal.</div>`;
+  }
+  if (totalFeedKg > 0 && totalFeedKg < 150) {
+    alertsHtml += `<div class="alert-box">⚠️ <strong>Low Feed Stock Alert:</strong> Only ${fmt(totalFeedKg)} kg left in store.</div>`;
+  }
+  document.getElementById('dashboardAlerts').innerHTML = alertsHtml;
+
+  let kpis = `
+    <div class="kpi" onclick="switchTab('ponds', document.querySelectorAll('nav button')[1])">
+      <div class="kpi-label">Active Ponds</div>
+      <div class="kpi-val">${state.ponds.length}</div>
+      <div class="kpi-sub">Tap to manage ponds</div>
+    </div>
+    <div class="kpi" onclick="switchTab('ponds', document.querySelectorAll('nav button')[1])">
+      <div class="kpi-label">Est. Population</div>
+      <div class="kpi-val">${fmt(totalPop)}</div>
+      <div class="kpi-sub">Avg wt: ${fmt(avgWt)} g</div>
+    </div>
+    <div class="kpi" onclick="switchTab('ponds', document.querySelectorAll('nav button')[1])">
+      <div class="kpi-label">Total Biomass</div>
+      <div class="kpi-val">${fmt(totalBiomassKg)} kg</div>
+      <div class="kpi-sub">Standing live stock</div>
+    </div>
+    <div class="kpi" onclick="switchTab('ops', document.querySelectorAll('nav button')[2])">
+      <div class="kpi-label">Feed Inventory</div>
+      <div class="kpi-val">${fmt(totalFeedKg)} kg</div>
+      <div class="kpi-sub">Fed today: ${fmt(todayFed)} kg</div>
+    </div>
+  `;
+  if (currentUser.role === 'admin') {
+    const net = totalRev - totalSpend;
+    kpis += `
+      <div class="kpi" onclick="switchTab('sales', document.querySelectorAll('nav button')[3])">
+        <div class="kpi-label">Production Cost</div>
+        <div class="kpi-val" style="color:#C2410C;">${money(totalSpend)}</div>
+        <div class="kpi-sub">Total expenditure</div>
+      </div>
+      <div class="kpi" onclick="switchTab('sales', document.querySelectorAll('nav button')[3])">
+        <div class="kpi-label">Sales Revenue</div>
+        <div class="kpi-val">${money(totalRev)}</div>
+        <div class="kpi-sub">Pending: ${money(unpaid)}</div>
+      </div>
+      <div class="kpi" onclick="switchTab('sales', document.querySelectorAll('nav button')[3])">
+        <div class="kpi-label">Net Profit</div>
+        <div class="kpi-val" style="color:${net >= 0 ? 'var(--green)' : 'var(--red)'};">${money(net)}</div>
+        <div class="kpi-sub">${net >= 0 ? 'Profitable' : 'Growing phase'}</div>
+      </div>
+      <div class="kpi" onclick="switchTab('ops', document.querySelectorAll('nav button')[2])">
+        <div class="kpi-label">Water Alerts</div>
+        <div class="kpi-val" style="color:${abnormalWater.length ? 'var(--red)' : 'var(--green)'};">${abnormalWater.length}</div>
+        <div class="kpi-sub">Abnormal readings</div>
+      </div>
+    `;
+  }
+  document.getElementById('dashboardKpis').innerHTML = kpis;
+
+  const maxBio = Math.max(...state.ponds.map(p => (p.population * p.avgWeightG) / 1000), 1);
+  const stocked = state.ponds.filter(p => p.population > 0);
+  document.getElementById('biomassChart').innerHTML = stocked.length === 0
+    ? '<div style="font-size:12px;color:var(--muted);">No fish stocked yet. Open Ponds to stock fingerlings/juveniles.</div>'
+    : stocked.map(p => {
+        const bio = (p.population * p.avgWeightG) / 1000;
+        const pct = Math.min(100, (bio / maxBio) * 100);
+        return `<div style="margin-bottom:8px;">
+          <div class="row-between" style="font-size:12px;"><strong>${p.id} (${p.name})</strong><span>${fmt(bio)} kg</span></div>
+          <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join('');
+
+  if (currentUser.role === 'admin') {
+    const costPerKg = totalBiomassKg > 0 ? totalSpend / totalBiomassKg : 0;
+    document.getElementById('financeBreakdown').innerHTML = `
+      <div class="row-between"><span>Total Expenditure:</span><strong>${money(totalSpend)}</strong></div>
+      <div class="row-between" style="margin-top:4px;"><span>Total Sales Revenue:</span><strong>${money(totalRev)}</strong></div>
+      <div class="row-between" style="margin-top:4px;"><span>Break-Even Cost / kg:</span><strong>${money(costPerKg)} / kg</strong></div>
+    `;
+  }
+}
+
+function renderPonds() {
+  document.getElementById('pondCountBadge').textContent = state.ponds.length;
+  const isAdmin = currentUser.role === 'admin';
+  document.getElementById('pondsList').innerHTML = state.ponds.map((p, idx) => {
+    const locked = isPondUnderWithdrawal(p.id);
+    const badgeClass = locked || p.status === 'red' ? 'badge-red' : (p.status === 'yellow' ? 'badge-yellow' : 'badge-green');
+    const badgeText = locked ? 'WITHDRAWAL LOCK' : p.status.toUpperCase();
+    const bio = ((p.population || 0) * (p.avgWeightG || 0)) / 1000;
+    return `<div class="card">
+      <div class="row-between">
+        <div>
+          <strong>${p.id} – ${p.name}</strong>
+          <div style="font-size:11px;color:var(--muted);">${p.category} ${p.stockingDate ? '• Stocked: ' + p.stockingDate : ''}</div>
+        </div>
+        <span class="badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="grid-2" style="margin-top:10px;font-size:12px;">
+        <div>Population: <strong>${fmt(p.population)}</strong></div>
+        <div>Avg Weight: <strong>${fmt(p.avgWeightG)} g</strong></div>
+        <div>Est. Biomass: <strong>${fmt(bio)} kg</strong></div>
+        <div>Initial Stock: <strong>${fmt(p.initialStock)}</strong></div>
+      </div>
+      <div class="row-between" style="margin-top:10px;">
+        <button class="btn btn-sm" onclick="openStockModal(${idx})">+ Stock Fish</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm btn-outline" onclick="openPondModal(${idx})">Edit</button>
+          ${isAdmin ? `<button class="btn btn-sm btn-danger" onclick="deletePond(${idx})">Delete</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openPondModal(idx = null) {
+  const p = idx !== null ? state.ponds[idx] : { id: 'P' + (state.ponds.length + 1), name: '', category: 'Grow-Out Pond', status: 'green', population: 0, avgWeightG: 0 };
+  showModal(idx !== null ? 'Edit ' + p.id : 'Add New Pond', `
+    <label>Pond Code</label><input id="mPondId" value="${p.id}">
+    <label>Pond Name</label><input id="mPondName" value="${p.name}" placeholder="e.g. Grow-Out Pond 17">
+    <label>Category</label>
+    <select id="mPondCat">
+      <option ${p.category==='Grow-Out Pond'?'selected':''}>Grow-Out Pond</option>
+      <option ${p.category==='Holding & Sorting'?'selected':''}>Holding & Sorting</option>
+      <option ${p.category==='Water Reserve'?'selected':''}>Water Reserve</option>
+    </select>
+    <label>Status Indicator</label>
+    <select id="mPondStatus">
+      <option value="green" ${p.status==='green'?'selected':''}>GREEN (Normal)</option>
+      <option value="yellow" ${p.status==='yellow'?'selected':''}>YELLOW (Attention Required)</option>
+      <option value="red" ${p.status==='red'?'selected':''}>RED (Critical Issue)</option>
+    </select>
+    <label>Current Population</label><input type="number" id="mPondPop" value="${p.population}">
+    <label>Average Weight (g)</label><input type="number" id="mPondWt" value="${p.avgWeightG}">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="savePond(${idx})">Save Pond</button>
+  `);
+}
+
+function savePond(idx) {
+  const obj = {
+    id: document.getElementById('mPondId').value.trim(),
+    name: document.getElementById('mPondName').value.trim(),
+    category: document.getElementById('mPondCat').value,
+    status: document.getElementById('mPondStatus').value,
+    population: Number(document.getElementById('mPondPop').value || 0),
+    initialStock: idx !== null ? state.ponds[idx].initialStock : Number(document.getElementById('mPondPop').value || 0),
+    avgWeightG: Number(document.getElementById('mPondWt').value || 0),
+    stockingDate: idx !== null ? state.ponds[idx].stockingDate : new Date().toISOString().slice(0, 10)
+  };
+  if (!obj.id || !obj.name) return;
+  if (idx !== null) state.ponds[idx] = obj;
+  else state.ponds.push(obj);
+  saveState(); closeModal(); renderAll();
+}
+
+function deletePond(idx) {
+  if (confirm('Delete this pond?')) { state.ponds.splice(idx, 1); saveState(); renderAll(); }
+}
+
+function openStockModal(idx) {
+  const p = state.ponds[idx];
+  showModal('Stock Fish into ' + p.id, `
+    <label>Number of Fingerlings / Juveniles</label><input type="number" id="stCount" placeholder="e.g. 2000">
+    <label>Average Weight per Fish (grams)</label><input type="number" id="stWt" value="10">
+    <label>Total Purchase Cost (₦)</label><input type="number" id="stCost" placeholder="e.g. 160000">
+    <label>Stocking Date</label><input type="date" id="stDate" value="${new Date().toISOString().slice(0,10)}">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="confirmStock(${idx})">Confirm Stocking</button>
+  `);
+}
+
+function confirmStock(idx) {
+  const count = Number(document.getElementById('stCount').value || 0);
+  const wt = Number(document.getElementById('stWt').value || 0);
+  const cost = Number(document.getElementById('stCost').value || 0);
+  const date = document.getElementById('stDate').value;
+  if (count <= 0) return;
+  const p = state.ponds[idx];
+  const newPop = (p.population || 0) + count;
+  p.avgWeightG = newPop > 0 ? (((p.population * p.avgWeightG) + (count * wt)) / newPop) : wt;
+  p.population = newPop;
+  p.initialStock = (p.initialStock || 0) + count;
+  p.stockingDate = date;
+  if (cost > 0) {
+    state.expenses.unshift({ id: 'exp_' + Date.now(), pondId: p.id, category: 'Fingerlings/Juveniles', desc: `Stocked ${count} fish in ${p.id}`, amount: cost, date });
+  }
+  saveState(); closeModal(); renderAll();
+}
+
+function renderFeed() {
+  const isAdmin = currentUser.role === 'admin';
+  document.getElementById('feedBatchList').innerHTML = state.feedBatches.length === 0
+    ? '<div style="font-size:12px;color:var(--muted);">No feed batches added yet. Tap "+ Add Feed Stock".</div>'
+    : state.feedBatches.map((b, i) => `
+      <div style="border-bottom:1px solid var(--border);padding:8px 0;">
+        <div class="row-between">
+          <div><strong>${b.brand} (${b.pellet})</strong><div style="font-size:11px;color:var(--muted);">Remaining: ${fmt(b.remainingKg)} kg ${isAdmin ? '• ' + money(b.costPerKg) + '/kg' : ''}</div></div>
+          <div style="display:flex;gap:5px;">
+            <button class="btn btn-sm btn-outline" onclick="openFeedBatchModal(${i})">Edit</button>
+            ${isAdmin ? `<button class="btn btn-sm btn-danger" onclick="deleteFeedBatch(${i})">Del</button>` : ''}
+          </div>
+        </div>
+      </div>`).join('');
+
+  document.getElementById('feedingLogList').innerHTML = state.feedingLogs.length === 0
+    ? '<div style="font-size:12px;color:var(--muted);">No daily feedings recorded yet.</div>'
+    : state.feedingLogs.map((f, i) => `
+      <div style="border-bottom:1px solid var(--border);padding:8px 0;">
+        <div class="row-between">
+          <div>
+            <strong>${f.pondId} • ${f.feedLabel}</strong>
+            <div style="font-size:11px;color:var(--muted);">${fmt(f.qtyKg)} kg on ${f.date} by ${f.by}</div>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button class="btn btn-sm btn-outline" onclick="openFeedingLogModal(${i})">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteFeedingLog(${i})">Del</button>
+          </div>
+        </div>
+      </div>`).join('');
+}
+
+function openFeedBatchModal(idx = null) {
+  const b = idx !== null ? state.feedBatches[idx] : { brand: 'Blue Crown', pellet: '3mm', bagKg: 15, bags: 10, remainingKg: 150, costPerBag: 22000 };
+  showModal(idx !== null ? 'Edit Feed Batch' : 'Add Feed Batch', `
+    <label>Feed Brand</label><input id="fbBrand" value="${b.brand}">
+    <label>Pellet Size</label>
+    <select id="fbPellet">${['2mm','3mm','4mm','6mm','9mm'].map(s => `<option ${b.pellet===s?'selected':''}>${s}</option>`).join('')}</select>
+    <label>Bag Weight (kg)</label><input type="number" id="fbBagKg" value="${b.bagKg}">
+    <label>${idx !== null ? 'Remaining Stock (kg)' : 'Number of Bags'}</label>
+    <input type="number" id="fbQty" value="${idx !== null ? b.remainingKg : b.bags}">
+    <label>Cost per Bag (₦)</label><input type="number" id="fbCost" value="${b.costPerBag}">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="saveFeedBatch(${idx})">Save Feed Stock</button>
+  `);
+}
+
+function saveFeedBatch(idx) {
+  const brand = document.getElementById('fbBrand').value.trim();
+  const pellet = document.getElementById('fbPellet').value;
+  const bagKg = Number(document.getElementById('fbBagKg').value || 15);
+  const qty = Number(document.getElementById('fbQty').value || 0);
+  const costPerBag = Number(document.getElementById('fbCost').value || 0);
+  const remainingKg = idx !== null ? qty : (bagKg * qty);
+  const costPerKg = bagKg > 0 ? costPerBag / bagKg : 0;
+  const obj = { id: idx !== null ? state.feedBatches[idx].id : 'fb_' + Date.now(), brand, pellet, bagKg, remainingKg, costPerBag, costPerKg };
+  if (idx !== null) state.feedBatches[idx] = obj;
+  else state.feedBatches.unshift(obj);
+  saveState(); closeModal(); renderAll();
+}
+
+function deleteFeedBatch(idx) {
+  if (confirm('Delete this feed batch?')) { state.feedBatches.splice(idx, 1); saveState(); renderAll(); }
+}
+
+function openFeedingLogModal(editIdx = null) {
+  if (state.feedBatches.length === 0) { alert('Please add a Feed Stock batch first.'); return; }
+  const existing = editIdx !== null ? state.feedingLogs[editIdx] : null;
+  showModal(existing ? 'Edit Feeding Entry' : 'Record Daily Feeding', `
+    <label>Select Pond</label>
+    <select id="flPond">${state.ponds.map(p => `<option value="${p.id}" ${existing && existing.pondId===p.id?'selected':''}>${p.id} – ${p.name}</option>`).join('')}</select>
+    <label>Select Feed Type & Pellet</label>
+    <select id="flBatch">${state.feedBatches.map(b => `<option value="${b.id}" ${existing && existing.batchId===b.id?'selected':''}>${b.brand} (${b.pellet}) - ${fmt(b.remainingKg)}kg left</option>`).join('')}</select>
+    <label>Quantity Fed (kg)</label>
+    <input type="number" step="0.1" id="flQty" value="${existing ? existing.qtyKg : ''}" placeholder="e.g. 5.5">
+    <label>Date</label>
+    <input type="date" id="flDate" value="${existing ? existing.date : new Date().toISOString().slice(0,10)}">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="saveFeedingLog(${editIdx})">Save Feeding Record</button>
+  `);
+}
+
+function saveFeedingLog(editIdx) {
+  if (editIdx !== null) {
+    const old = state.feedingLogs[editIdx];
+    const oldBatch = state.feedBatches.find(b => b.id === old.batchId);
+    if (oldBatch) oldBatch.remainingKg += Number(old.qtyKg);
+    state.expenses = state.expenses.filter(e => e.refId !== old.id);
+  }
+  const pondId = document.getElementById('flPond').value;
+  const batchId = document.getElementById('flBatch').value;
+  const qtyKg = Number(document.getElementById('flQty').value || 0);
+  const date = document.getElementById('flDate').value;
+  const batch = state.feedBatches.find(b => b.id === batchId);
+  if (!batch || qtyKg <= 0) return;
+
+  batch.remainingKg = Math.max(0, Number(batch.remainingKg) - qtyKg);
+  const cost = qtyKg * Number(batch.costPerKg || 0);
+  const logId = editIdx !== null ? state.feedingLogs[editIdx].id : 'fl_' + Date.now();
+  const entry = { id: logId, pondId, batchId, feedLabel: `${batch.brand} ${batch.pellet}`, qtyKg, cost, date, by: currentUser.name };
+
+  if (editIdx !== null) state.feedingLogs[editIdx] = entry;
+  else state.feedingLogs.unshift(entry);
+
+  if (cost > 0) {
+    state.expenses.unshift({ id: 'exp_' + Date.now(), refId: logId, pondId, category: 'Feed', desc: `${qtyKg}kg ${batch.brand} ${batch.pellet} (${pondId})`, amount: cost, date });
+  }
+  saveState(); closeModal(); renderAll();
+}
+
+function deleteFeedingLog(idx) {
+  const old = state.feedingLogs[idx];
+  const batch = state.feedBatches.find(b => b.id === old.batchId);
+  if (batch) batch.remainingKg += Number(old.qtyKg);
+  state.expenses = state.expenses.filter(e => e.refId !== old.id);
+  state.feedingLogs.splice(idx, 1);
+  saveState(); renderAll();
+}
+
+function renderSampling() {
+  document.getElementById('samplingList').innerHTML = state.samplingLogs.length === 0
+    ? '<div style="font-size:12px;color:var(--muted);">No 14-day weight samples recorded yet.</div>'
+    : state.samplingLogs.map((s, i) => `
+      <div style="border-bottom:1px solid var(--border);padding:8px 0;font-size:12px;">
+        <div class="row-between">
+          <strong>${s.pondId} • Avg: ${fmt(s.avgWt)} g (Sampled ${s.count} fish)</strong>
+          <button class="btn btn-sm btn-danger" onclick="state.samplingLogs.splice(${i},1);saveState();renderAll();">Del</button>
+        </div>
+        <div style="color:var(--muted);margin-top:3px;">Date: ${s.date} • Est. 1kg Harvest Date: <strong>${s.forecast1kg}</strong></div>
+      </div>`).join('');
+}
+
+function openSamplingModal() {
+  showModal('14-Day Fish Weight Sampling', `
+    <label>Pond</label><select id="smPond">${state.ponds.map(p => `<option value="${p.id}">${p.id} – ${p.name}</option>`).join('')}</select>
+    <label>Number of Fish Sampled</label><input type="number" id="smCount" value="30">
+    <label>Total Sample Weight (kg) OR comma-separated grams</label><input id="smWeights" placeholder="e.g. 12.5 or 410, 425, 390">
+    <label>Sampling Date</label><input type="date" id="smDate" value="${new Date().toISOString().slice(0,10)}">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="saveSampling()">Calculate Growth & Save</button>
+  `);
+}
+
+function saveSampling() {
+  const pondId = document.getElementById('smPond').value;
+  const count = Number(document.getElementById('smCount').value || 1);
+  const raw = document.getElementById('smWeights').value.trim();
+  const date = document.getElementById('smDate').value;
+  let avgWt = 0;
+  if (raw.includes(',')) {
+    const arr = raw.split(',').map(x => Number(x.trim())).filter(x => x > 0);
+    avgWt = arr.reduce((a, b) => a + b, 0) / (arr.length || 1);
+  } else {
+    avgWt = (Number(raw) * 1000) / count;
+  }
+  if (avgWt <= 0) return;
+  const pond = state.ponds.find(p => p.id === pondId);
+  const prevWt = pond ? Number(pond.avgWeightG || 10) : 10;
+  const adg = Math.max(4.5, (avgWt - prevWt) / 14);
+  const daysTo1kg = avgWt >= 1000 ? 0 : Math.ceil((1000 - avgWt) / adg);
+  const forecastDate = new Date(Date.now() + daysTo1kg * 86400000).toISOString().slice(0, 10);
+  if (pond) pond.avgWeightG = avgWt;
+  state.samplingLogs.unshift({ id: 'sm_' + Date.now(), pondId, count, avgWt, date, forecast1kg: daysTo1kg === 0 ? 'Ready Now (≥1kg)' : forecastDate });
+  saveState(); closeModal(); renderAll();
+}
+
+function renderMortality() {
+  document.getElementById('mortalityList').innerHTML = state.mortalityLogs.length === 0
+    ? '<div style="font-size:12px;color:var(--muted);">No mortality entries logged.</div>'
+    : state.mortalityLogs.map((m, i) => `<div class="row-between" style="border-bottom:1px solid var(--border);padding:8px 0;font-size:12px;">
+        <div><strong>${m.pondId}: -${m.dead} fish</strong> (${m.cause || 'Unspecified'}) • ${m.date}</div>
+        <button class="btn btn-sm btn-danger" onclick="deleteMortality(${i})">Del</button>
+      </div>`).join('');
+}
+
+function openMortalityModal() {
+  showModal('Record Daily Mortality', `
+    <label>Pond</label><select id="mtPond">${state.ponds.map(p => `<option value="${p.id}">${p.id}</option>`).join('')}</select>
+    <label>Dead Fish Count</label><input type="number" id="mtDead" placeholder="e.g. 5">
+    <label>Suspected Cause</label><input id="mtCause" placeholder="e.g. Handling stress">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="saveMortality()">Save Mortality</button>
+  `);
+}
+
+function saveMortality() {
+  const pondId = document.getElementById('mtPond').value;
+  const dead = Number(document.getElementById('mtDead').value || 0);
+  const cause = document.getElementById('mtCause').value.trim();
+  if (dead <= 0) return;
+  const pond = state.ponds.find(p => p.id === pondId);
+  if (pond) pond.population = Math.max(0, Number(pond.population || 0) - dead);
+  state.mortalityLogs.unshift({ id: 'mt_' + Date.now(), pondId, dead, cause, date: new Date().toISOString().slice(0,10) });
+  saveState(); closeModal(); renderAll();
+}
+
+function deleteMortality(i) {
+  const m = state.mortalityLogs[i];
+  const pond = state.ponds.find(p => p.id === m.pondId);
+  if (pond) pond.population += Number(m.dead);
+  state.mortalityLogs.splice(i, 1);
+  saveState(); renderAll();
+}
+
+function renderWater() {
+  document.getElementById('waterList').innerHTML = state.waterLogs.length === 0
+    ? '<div style="font-size:12px;color:var(--muted);">No water quality readings logged.</div>'
+    : state.waterLogs.map((w, i) => `<div style="border-bottom:1px solid var(--border);padding:8px 0;font-size:12px;">
+        <div class="row-between">
+          <strong>${w.pondId} • Temp: ${w.temp}°C | DO: ${w.doVal} mg/L | pH: ${w.ph} | NH3: ${w.nh3}</strong>
+          <span class="badge ${w.abnormal ? 'badge-red' : 'badge-green'}">${w.abnormal ? 'ALERT' : 'OK'}</span>
+        </div>
+        <div style="color:var(--muted);margin-top:2px;">Action: ${w.action || 'None'} • ${w.date}</div>
+      </div>`).join('');
+}
+
+function openWaterModal() {
+  showModal('Log Water Quality', `
+    <label>Pond</label><select id="wqPond">${state.ponds.map(p => `<option value="${p.id}">${p.id}</option>`).join('')}</select>
+    <div class="grid-2">
+      <div><label>Temp (°C)</label><input type="number" step="0.1" id="wqTemp" value="28.0"></div>
+      <div><label>Dissolved O2 (mg/L)</label><input type="number" step="0.1" id="wqDo" value="5.2"></div>
+      <div><label>pH</label><input type="number" step="0.1" id="wqPh" value="7.2"></div>
+      <div><label>Ammonia (mg/L)</label><input type="number" step="0.01" id="wqNh3" value="0.02"></div>
+    </div>
+    <label>Corrective Action Taken</label><input id="wqAction" placeholder="e.g. Partial water flush">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="saveWater()">Save Reading</button>
+  `);
+}
+
+function saveWater() {
+  const pondId = document.getElementById('wqPond').value;
+  const temp = Number(document.getElementById('wqTemp').value);
+  const doVal = Number(document.getElementById('wqDo').value);
+  const ph = Number(document.getElementById('wqPh').value);
+  const nh3 = Number(document.getElementById('wqNh3').value);
+  const action = document.getElementById('wqAction').value.trim();
+  const abnormal = temp < 25 || temp > 32 || doVal < 3.0 || ph < 6.5 || ph > 8.5 || nh3 > 0.05;
+  const pond = state.ponds.find(p => p.id === pondId);
+  if (pond && abnormal) pond.status = 'yellow';
+  state.waterLogs.unshift({ id: 'wq_' + Date.now(), pondId, temp, doVal, ph, nh3, action, abnormal, date: new Date().toISOString().slice(0,10) });
+  saveState(); closeModal(); renderAll();
+}
+
+function renderMeds() {
+  const isAdmin = currentUser.role === 'admin';
+  document.getElementById('medList').innerHTML = state.medLogs.length === 0
+    ? '<div style="font-size:12px;color:var(--muted);">No medication treatments recorded.</div>'
+    : state.medLogs.map((m, i) => {
+        const activeLock = !m.cleared && new Date(m.expiresAt) > new Date();
+        return `<div style="border-bottom:1px solid var(--border);padding:8px 0;font-size:12px;">
+          <div class="row-between">
+            <strong>${m.pondId} • ${m.product} (${m.days}d withdrawal)</strong>
+            <span class="badge ${activeLock ? 'badge-red' : 'badge-green'}">${activeLock ? 'DO NOT HARVEST' : 'CLEARED'}</span>
+          </div>
+          <div style="color:var(--muted);margin-top:3px;">Expires: ${m.expiresAt.slice(0,10)}
+            ${activeLock && isAdmin ? `<button class="btn btn-sm btn-outline" style="margin-left:8px;" onclick="state.medLogs[${i}].cleared=true;saveState();renderAll();">Admin Clear Lock</button>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+}
+
+function openMedModal() {
+  showModal('Record Medication & Withdrawal', `
+    <label>Pond</label><select id="mdPond">${state.ponds.map(p => `<option value="${p.id}">${p.id}</option>`).join('')}</select>
+    <label>Product / Active Ingredient</label><input id="mdProd" placeholder="e.g. Oxytetracycline">
+    <label>Verified Withdrawal Period (Days)</label><input type="number" id="mdDays" value="14">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="saveMed()">Activate Withdrawal Lock</button>
+  `);
+}
+
+function saveMed() {
+  const pondId = document.getElementById('mdPond').value;
+  const product = document.getElementById('mdProd').value.trim();
+  const days = Number(document.getElementById('mdDays').value || 14);
+  if (!product) return;
+  const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
+  state.medLogs.unshift({ id: 'md_' + Date.now(), pondId, product, days, expiresAt, cleared: false });
+  saveState(); closeModal(); renderAll();
+}
+
+function renderTransfers() {
+  document.getElementById('transferList').innerHTML = state.transfers.length === 0
+    ? '<div style="font-size:12px;color:var(--muted);">No pond-to-pond sorting transfers yet.</div>'
+    : state.transfers.map(t => `<div style="border-bottom:1px solid var(--border);padding:8px 0;font-size:12px;">
+        <strong>${t.fromId} → ${t.toId}:</strong> ${fmt(t.count)} fish @ ${fmt(t.avgWt)}g (${t.date})
+      </div>`).join('');
+}
+
+function openTransferModal() {
+  showModal('Sort & Transfer Fish Between Ponds', `
+    <label>Source Pond</label><select id="trFrom">${state.ponds.map(p => `<option value="${p.id}">${p.id} (${fmt(p.population)} fish)</option>`).join('')}</select>
+    <label>Destination Pond</label><select id="trTo">${state.ponds.map(p => `<option value="${p.id}">${p.id} – ${p.name}</option>`).join('')}</select>
+    <label>Number of Fish Transferred</label><input type="number" id="trCount" placeholder="e.g. 500">
+    <label>Average Weight of Sorted Fish (g)</label><input type="number" id="trWt" value="450">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="saveTransfer()">Execute Transfer</button>
+  `);
+}
+
+function saveTransfer() {
+  const fromId = document.getElementById('trFrom').value;
+  const toId = document.getElementById('trTo').value;
+  const count = Number(document.getElementById('trCount').value || 0);
+  const avgWt = Number(document.getElementById('trWt').value || 0);
+  if (fromId === toId || count <= 0) return;
+  const src = state.ponds.find(p => p.id === fromId);
+  const dst = state.ponds.find(p => p.id === toId);
+  if (src) src.population = Math.max(0, Number(src.population || 0) - count);
+  if (dst) {
+    const newPop = Number(dst.population || 0) + count;
+    dst.avgWeightG = newPop > 0 ? (((dst.population * dst.avgWeightG) + (count * avgWt)) / newPop) : avgWt;
+    dst.population = newPop;
+  }
+  state.transfers.unshift({ id: 'tr_' + Date.now(), fromId, toId, count, avgWt, date: new Date().toISOString().slice(0,10) });
+  saveState(); closeModal(); renderAll();
+}
+
+function renderSalesAndCost() {
+  const totalSpend = state.expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalBio = state.ponds.reduce((s, p) => s + ((p.population * p.avgWeightG) / 1000), 0);
+  const beLive = totalBio > 0 ? totalSpend / totalBio : 0;
+  const beSmoked = beLive > 0 ? (beLive * 3.0) + 600 : 0;
+
+  document.getElementById('breakEvenBox').innerHTML = `
+    <div>Standing Biomass: <strong>${fmt(totalBio)} kg</strong> | Total Investment: <strong>${money(totalSpend)}</strong></div>
+    <div style="margin-top:6px;">Min. Break-Even Price (Live Catfish): <strong>${money(beLive)} / kg</strong></div>
+    <div>Min. Break-Even Price (Smoked Dried Catfish ~33% yield): <strong>${money(beSmoked)} / kg</strong></div>
+  `;
+
+  document.getElementById('expenseList').innerHTML = state.expenses.slice(0, 15).map((e, i) => `
+    <div class="row-between" style="border-bottom:1px solid var(--border);padding:6px 0;font-size:12px;">
+      <div><strong>${e.category}:</strong> ${e.desc} (${e.date})</div>
+      <div><strong>${money(e.amount)}</strong> <button class="btn btn-sm btn-danger" onclick="state.expenses.splice(${i},1);saveState();renderAll();">×</button></div>
+    </div>`).join('') || '<div style="font-size:12px;color:var(--muted);">No expenses logged yet.</div>';
+
+  document.getElementById('salesList').innerHTML = state.sales.map((s, i) => `
+    <div class="row-between" style="border-bottom:1px solid var(--border);padding:8px 0;font-size:12px;">
+      <div>
+        <strong>${s.buyer} • ${s.form} (${fmt(s.weightKg)} kg from ${s.pondId})</strong>
+        <div style="color:var(--muted);">Total: ${money(s.total)} • Paid: ${money(s.paid)} • Balance: ${money(s.total - s.paid)}</div>
+      </div>
+      ${currentUser.role === 'admin' ? `<button class="btn btn-sm btn-danger" onclick="state.sales.splice(${i},1);saveState();renderAll();">Del</button>` : ''}
+    </div>`).join('') || '<div style="font-size:12px;color:var(--muted);">No harvest sales recorded yet.</div>';
+}
+
+function openExpenseModal() {
+  showModal('Record Farm Expense', `
+    <label>Pond (or Shared Farm Overhead)</label>
+    <select id="exPond"><option value="SHARED">Shared Farm Overhead</option>${state.ponds.map(p => `<option value="${p.id}">${p.id}</option>`).join('')}</select>
+    <label>Category</label>
+    <select id="exCat"><option>Labour</option><option>Fuel</option><option>Electricity</option><option>Water Treatment</option><option>Medication</option><option>Transport</option><option>Maintenance</option><option>Packaging</option><option>Other</option></select>
+    <label>Description</label><input id="exDesc" placeholder="e.g. Generator diesel">
+    <label>Amount (₦)</label><input type="number" id="exAmt" placeholder="e.g. 25000">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="saveExpense()">Save Expense</button>
+  `);
+}
+
+function saveExpense() {
+  const pondId = document.getElementById('exPond').value;
+  const category = document.getElementById('exCat').value;
+  const desc = document.getElementById('exDesc').value.trim();
+  const amount = Number(document.getElementById('exAmt').value || 0);
+  if (!desc || amount <= 0) return;
+  state.expenses.unshift({ id: 'exp_' + Date.now(), pondId, category, desc, amount, date: new Date().toISOString().slice(0,10) });
+  saveState(); closeModal(); renderAll();
+}
+
+function openSaleModal() {
+  showModal('Record Harvest & Customer Sale', `
+    <label>Source Pond</label><select id="slPond">${state.ponds.map(p => `<option value="${p.id}">${p.id} – ${p.name}</option>`).join('')}</select>
+    <label>Buyer Name & Type</label><input id="slBuyer" placeholder="e.g. Mama Ngozi (Market Woman)">
+    <label>Product Form</label>
+    <select id="slForm"><option>Live Catfish</option><option>Fresh Cleaned Catfish</option><option>Smoked Catfish</option><option>Dried Catfish</option></select>
+    <label>Fish Count Harvested</label><input type="number" id="slCount" placeholder="e.g. 200">
+    <label>Weight Sold (kg)</label><input type="number" step="0.1" id="slWt" placeholder="e.g. 220">
+    <label>Price per kg (₦)</label><input type="number" id="slPrice" placeholder="e.g. 3200">
+    <label>Amount Paid Now (₦)</label><input type="number" id="slPaid" placeholder="e.g. 704000">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="saveSale()">Record Harvest Sale</button>
+  `);
+}
+
+function saveSale() {
+  const pondId = document.getElementById('slPond').value;
+  if (isPondUnderWithdrawal(pondId)) {
+    alert('FOOD SAFETY BLOCK: ' + pondId + ' is under active medication withdrawal and CANNOT be harvested.');
+    return;
+  }
+  const buyer = document.getElementById('slBuyer').value.trim();
+  const form = document.getElementById('slForm').value;
+  const count = Number(document.getElementById('slCount').value || 0);
+  const weightKg = Number(document.getElementById('slWt').value || 0);
+  const price = Number(document.getElementById('slPrice').value || 0);
+  const total = weightKg * price;
+  const paid = Number(document.getElementById('slPaid').value || 0);
+  if (!buyer || weightKg <= 0) return;
+
+  const pond = state.ponds.find(p => p.id === pondId);
+  if (pond && count > 0) pond.population = Math.max(0, Number(pond.population || 0) - count);
+  state.sales.unshift({ id: 'sl_' + Date.now(), pondId, buyer, form, count, weightKg, price, total, paid, date: new Date().toISOString().slice(0,10) });
+  saveState(); closeModal(); renderAll();
+}
+
+function renderStaff() {
+  document.getElementById('staffList').innerHTML = state.users.map((u, i) => `
+    <div class="row-between" style="border-bottom:1px solid var(--border);padding:8px 0;font-size:12px;">
+      <div><strong>${u.name}</strong> (${u.role.toUpperCase()})</div>
+      <div style="display:flex;gap:5px;">
+        <button class="btn btn-sm btn-outline" onclick="openStaffModal(${i})">Edit / Change PIN</button>
+        ${i > 0 ? `<button class="btn btn-sm btn-danger" onclick="state.users.splice(${i},1);saveState();renderStaff();populateLoginUsers();">Del</button>` : ''}
+      </div>
+    </div>`).join('');
+  if (state.firebase) {
+    document.getElementById('fbApiKey').value = state.firebase.apiKey || '';
+    document.getElementById('fbProjectId').value = state.firebase.projectId || '';
+  }
+}
+
+function openStaffModal(idx = null) {
+  const u = idx !== null ? state.users[idx] : { name: '', role: 'attendant', pin: '' };
+  showModal(idx !== null ? 'Edit Staff Account' : 'Add New Staff Account', `
+    <label>Staff Full Name</label><input id="stfName" value="${u.name}" placeholder="e.g. Chukwudi (Attendant)">
+    <label>Role Permission</label>
+    <select id="stfRole">
+      <option value="admin" ${u.role==='admin'?'selected':''}>Administrator (Full Access)</option>
+      <option value="attendant" ${u.role==='attendant'?'selected':''}>Farm Attendant (Field Logs Only)</option>
+      <option value="sales" ${u.role==='sales'?'selected':''}>Sales Manager (Customers & Sales)</option>
+    </select>
+    <label>Private 4-Digit PIN</label><input type="password" inputmode="numeric" maxlength="6" id="stfPin" value="${u.pin}" placeholder="Enter private PIN">
+    <button class="btn" style="width:100%;justify-content:center;" onclick="saveStaff(${idx})">Save Staff</button>
+  `);
+}
+
+function saveStaff(idx) {
+  const name = document.getElementById('stfName').value.trim();
+  const role = document.getElementById('stfRole').value;
+  const pin = document.getElementById('stfPin').value.trim();
+  if (!name || pin.length < 4) { alert('Enter staff name and at least 4-digit PIN.'); return; }
+  const obj = { id: idx !== null ? state.users[idx].id : 'u_' + Date.now(), name, role, pin };
+  if (idx !== null) state.users[idx] = obj;
+  else state.users.push(obj);
+  saveState(); populateLoginUsers(); closeModal(); renderStaff();
+}
+
+function exportBackupFile(isShiftReport) {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (isShiftReport ? 'tamah_shift_report_' : 'tamah_full_backup_') + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+function importAndMergeFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const incoming = JSON.parse(reader.result);
+      const mergeById = (target, src) => {
+        const ids = new Set(target.map(x => x.id));
+        let added = 0;
+        (src || []).forEach(item => { if (!ids.has(item.id)) { target.unshift(item); added++; } });
+        return added;
+      };
+      const c1 = mergeById(state.feedingLogs, incoming.feedingLogs);
+      const c2 = mergeById(state.mortalityLogs, incoming.mortalityLogs);
+      const c3 = mergeById(state.samplingLogs, incoming.samplingLogs);
+      const c4 = mergeById(state.waterLogs, incoming.waterLogs);
+      const c5 = mergeById(state.sales, incoming.sales);
+      saveState(); renderAll();
+      alert(`Merged ${c1 + c2 + c3 + c4 + c5} new worker records successfully!`);
+    } catch (e) {
+      alert('Invalid shift report file.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function saveFirebaseConfig() {
+  state.firebase = {
+    apiKey: document.getElementById('fbApiKey').value.trim(),
+    projectId: document.getElementById('fbProjectId').value.trim()
+  };
+  saveState();
+  syncWithFirebase();
+}
+
+async function pushToFirestore() {
+  const { apiKey, projectId } = state.firebase;
+  if (!apiKey || !projectId) return;
+  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/tamah_farm/master?key=${apiKey}`;
+  await fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: { payload: { stringValue: JSON.stringify(state) } } })
+  });
+}
+
+async function syncWithFirebase() {
+  const { apiKey, projectId } = state.firebase;
+  if (!apiKey || !projectId) { alert('Enter Firebase API Key and Project ID first.'); return; }
+  const statusEl = document.getElementById('syncStatusText');
+  statusEl.textContent = 'Syncing with cloud...';
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/tamah_farm/master?key=${apiKey}`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.fields && data.fields.payload) {
+        const cloudState = JSON.parse(data.fields.payload.stringValue);
+        const mergeById = (target, src) => {
+          const ids = new Set(target.map(x => x.id));
+          (src || []).forEach(item => { if (!ids.has(item.id)) target.unshift(item); });
+        };
+        mergeById(state.feedingLogs, cloudState.feedingLogs);
+        mergeById(state.mortalityLogs, cloudState.mortalityLogs);
+        mergeById(state.samplingLogs, cloudState.samplingLogs);
+        mergeById(state.waterLogs, cloudState.waterLogs);
+        mergeById(state.sales, cloudState.sales);
+        mergeById(state.expenses, cloudState.expenses);
+      }
+    }
+    await pushToFirestore();
+    await saveState();
+    renderAll();
+    statusEl.textContent = 'Cloud Sync Complete (' + new Date().toLocaleTimeString() + ')';
+  } catch (e) {
+    statusEl.textContent = 'Offline mode: will sync when internet returns.';
+  }
+}
+
+function exportCsvReport() {
+  let csv = 'Pond ID,Name,Category,Population,Avg Weight (g),Est Biomass (kg)\n';
+  state.ponds.forEach(p => {
+    csv += `${p.id},"${p.name}","${p.category}",${p.population},${p.avgWeightG},${((p.population*p.avgWeightG)/1000).toFixed(2)}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tamah_global_farm_report.csv';
+  a.click();
+}
+
+function showModal(title, html) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalBackdrop').classList.remove('hidden');
+}
+function closeModal() { document.getElementById('modalBackdrop').classList.add('hidden'); }
+
+loadState().then(() => populateLoginUsers());
+</script>
+</body>
+</html>
